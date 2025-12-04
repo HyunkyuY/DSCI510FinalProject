@@ -5,14 +5,14 @@ import requests
 import time
 import csv
 
-base_url = "https://www.pgaclubtracker.com"
+from src.config import PGACT_BASE_URL, WITB_CSV
 
 def get_all_player_slugs() -> list[str]:
     slugs = set()
     page = 1
 
     while True:
-        page_url = f"{base_url}/players?page={page}"
+        page_url = f"{PGACT_BASE_URL}/players?page={page}"
         print(f"Fetching player list page: {page_url}")
         resp = requests.get(page_url, timeout=15)
         if resp.status_code != 200:
@@ -55,9 +55,9 @@ def make_driver() -> webdriver.Chrome:
     chrome_options.add_argument("--disable-dev-shm-usage")
     return webdriver.Chrome(options=chrome_options)
 
-def scrape_witb(player_slug: str, driver: webdriver.Chrome):
 
-    witb_url = f"{base_url}/players/{player_slug}-witb-whats-in-the-bag"
+def scrape_witb(player_slug: str, driver: webdriver.Chrome):
+    witb_url = f"{PGACT_BASE_URL}/players/{player_slug}-witb-whats-in-the-bag"
     print(f"Fetching WITB for {player_slug}: {witb_url}")
     driver.get(witb_url)
     time.sleep(2)
@@ -98,7 +98,11 @@ def scrape_witb(player_slug: str, driver: webdriver.Chrome):
 
     return results
 
-def scrape_all_players_to_csv(output_csv: str = "pgaclubtracker_witb_all_players.csv"):
+
+def scrape_all_players_to_csv(output_csv: str = None):
+    if output_csv is None:
+        output_csv = WITB_CSV
+
     slugs = get_all_player_slugs()
     print(f"Found {len(slugs)} players")
 

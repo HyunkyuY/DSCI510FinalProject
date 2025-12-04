@@ -1,12 +1,9 @@
 import csv
 import requests
-
-YEAR = 2025
-OUTFILE = f"pga_liv_euro_{YEAR}_strokes_gained_combined.csv"
-BASE_URL = "https://datagolf.com/get-tour-lists"
+from src.config import SEASON_YEAR, DATAGOLF_BASE_URL, SEASON_SG_CSV
 
 def fetch_tour_list(tour: str, year: int) -> dict:
-    url = f"{BASE_URL}/{tour.upper()}_{year}"
+    url = f"{DATAGOLF_BASE_URL}/{tour.upper()}_{year}"
     resp = requests.put(url, timeout=30)
     resp.raise_for_status()
     return resp.json()
@@ -26,25 +23,26 @@ def make_row(d, tour):
     }
 
 def main():
+    year = SEASON_YEAR
     combined = {}
     pga_players = set()
     liv_players = set()
 
-    pga_data = fetch_tour_list("PGA", YEAR)
+    pga_data = fetch_tour_list("PGA", year)
     for d in pga_data["data"]:
         name, row = make_row(d, "PGA")
         combined[name] = row
         pga_players.add(name)
 
-    liv_data = fetch_tour_list("LIV", YEAR)
+    liv_data = fetch_tour_list("LIV", year)
     for d in liv_data["data"]:
         name, row = make_row(d, "LIV")
-        if name not in pga_players:  # only add if not PGA
+        if name not in pga_players:
             combined[name] = row
             liv_players.add(name)
-    euro_data = fetch_tour_list("EURO", YEAR)
-    euro_skipped = 0
 
+    euro_data = fetch_tour_list("EURO", year)
+    euro_skipped = 0
     for d in euro_data["data"]:
         name, row = make_row(d, "EURO")
         if name in pga_players or name in liv_players:
@@ -52,15 +50,14 @@ def main():
             continue
         combined[name] = row
 
-    # Save to CSV
     fieldnames = ["Player", "Rounds", "Putt", "Arg", "App", "OTT", "BS", "T2G", "Tour"]
 
-    with open(OUTFILE, "w", newline="", encoding="utf-8") as f:
+    with open(SEASON_SG_CSV, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(combined.values())
 
-    print(f"Saved {len(combined)} unique players to {OUTFILE}")
+    print(f"Saved {len(combined)} unique players to {SEASON_SG_CSV}")
 
 if __name__ == "__main__":
     main()
